@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Every size in Brim sits on an 8pt grid; the few values that aren't multiples of 8
+/// Every size in Islet sits on an 8pt grid; the few values that aren't multiples of 8
 /// (card padding, radii) are tuned to match macOS 27's own glass cards.
 enum Metrics {
     /// Width of the open notch's content, not counting the top flares.

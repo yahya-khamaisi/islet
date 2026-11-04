@@ -16,7 +16,7 @@ struct CalendarView: View {
             } else {
                 Card {
                     CardLabel(symbol: "calendar", tint: Palette.outlook, title: "Outlook")
-                    CardPrompt(text: "Brim reads Outlook through macOS Calendar. Allow access, and add your Outlook account in System Settings › Internet Accounts if it isn't there yet.",
+                    CardPrompt(text: "Islet reads Outlook through macOS Calendar. Allow access, and add your Outlook account in System Settings › Internet Accounts if it isn't there yet.",
                                action: "Allow calendar access", run: calendar.requestAccess)
                 }
             }

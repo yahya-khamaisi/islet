@@ -2,17 +2,17 @@ import AppKit
 import SwiftUI
 
 @main
-struct BrimApp: App {
+struct IsletApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var app
 
     var body: some Scene {
-        // A small menu-bar item, so Brim can always be reached even if the notch can't.
-        MenuBarExtra("Brim", systemImage: "rectangle.topthird.inset.filled") {
-            Button("Open Brim") { app.model.open(.tab(.home), pinned: true) }
+        // A small menu-bar item, so Islet can always be reached even if the notch can't.
+        MenuBarExtra("Islet", systemImage: "rectangle.topthird.inset.filled") {
+            Button("Open Islet") { app.model.open(.tab(.home), pinned: true) }
             Button("Settings…") { app.model.open(.settings, pinned: true) }
                 .keyboardShortcut(",")
             Divider()
-            Button("Quit Brim") { NSApp.terminate(nil) }
+            Button("Quit Islet") { NSApp.terminate(nil) }
                 .keyboardShortcut("q")
         }
     }
@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 agents.handle(body, reply: reply)
             }
         }
-        do { try server.start() } catch { NSLog("Brim: agent server didn't start: \(error)") }
+        do { try server.start() } catch { NSLog("Islet: agent server didn't start: \(error)") }
 
         controller = NotchController(model: model, content: NotchView()
             .environment(model)

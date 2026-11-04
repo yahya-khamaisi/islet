@@ -1,15 +1,15 @@
 import Foundation
 
-/// Adds Brim's hooks to `~/.claude/settings.json`, and takes them out again. Every hook is
-/// a `curl` to Brim's local server that stays silent and succeeds when Brim isn't
+/// Adds Islet's hooks to `~/.claude/settings.json`, and takes them out again. Every hook is
+/// a `curl` to Islet's local server that stays silent and succeeds when Islet isn't
 /// running, so Claude Code behaves exactly as before.
 enum HookInstaller {
     static var settingsURL: URL {
-        if let path = ProcessInfo.processInfo.environment["BRIM_CLAUDE_SETTINGS"] { return URL(fileURLWithPath: path) }
+        if let path = ProcessInfo.processInfo.environment["ISLET_CLAUDE_SETTINGS"] { return URL(fileURLWithPath: path) }
         return FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude/settings.json")
     }
 
-    /// Hook events Brim listens to, with their matcher (tool events need one) and timeout.
+    /// Hook events Islet listens to, with their matcher (tool events need one) and timeout.
     private static let events: [(name: String, matcher: String?, timeout: Int)] = [
         ("SessionStart", nil, 5),
         ("UserPromptSubmit", nil, 5),
@@ -51,8 +51,8 @@ enum HookInstaller {
                 throw CocoaError(.fileReadCorruptFile)
             }
             settings = parsed
-            // One backup, taken the first time Brim touches the file.
-            let backup = settingsURL.appendingPathExtension("brim-backup")
+            // One backup, taken the first time Islet touches the file.
+            let backup = settingsURL.appendingPathExtension("islet-backup")
             if !fm.fileExists(atPath: backup.path) { try data.write(to: backup) }
         } else {
             try fm.createDirectory(at: settingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -60,7 +60,7 @@ enum HookInstaller {
 
         var hooks = settings["hooks"] as? [String: Any] ?? [:]
         for event in events {
-            var groups = (hooks[event.name] as? [[String: Any]] ?? []).compactMap(removingBrim)
+            var groups = (hooks[event.name] as? [[String: Any]] ?? []).compactMap(removingIslet)
             if adding {
                 var group: [String: Any] = ["hooks": [["type": "command", "command": command(timeout: event.timeout), "timeout": event.timeout]]]
                 if let matcher = event.matcher { group["matcher"] = matcher }
@@ -74,8 +74,8 @@ enum HookInstaller {
         try data.write(to: settingsURL, options: .atomic)
     }
 
-    /// The group without Brim's handlers, or nil when nothing else is left in it.
-    private static func removingBrim(_ group: [String: Any]) -> [String: Any]? {
+    /// The group without Islet's handlers, or nil when nothing else is left in it.
+    private static func removingIslet(_ group: [String: Any]) -> [String: Any]? {
         guard let handlers = group["hooks"] as? [[String: Any]] else { return group }
         let kept = handlers.filter { ($0["command"] as? String)?.contains(marker) != true }
         guard !kept.isEmpty else { return nil }

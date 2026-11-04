@@ -13,7 +13,7 @@ final class AgentStore {
         let tool: String
         let detail: String
         let since = Date.now
-        /// False once Brim stopped holding it and handed it back to Claude.
+        /// False once Islet stopped holding it and handed it back to Claude.
         var answerable = true
     }
 
@@ -28,7 +28,7 @@ final class AgentStore {
     }
 
     private(set) var sessions: [String: Session] = [:]
-    /// Whether Brim's hooks are in Claude Code's settings; Settings refreshes it.
+    /// Whether Islet's hooks are in Claude Code's settings; Settings refreshes it.
     var hooksInstalled = HookInstaller.isInstalled
     private var replies: [UUID: @Sendable (Data) -> Void] = [:]
     private var pruner: Timer?
@@ -116,7 +116,7 @@ final class AgentStore {
         if let reply = replies.removeValue(forKey: request.id) {
             switch answer {
             case .allow: reply(Self.decision("allow"))
-            case .deny: reply(Self.decision("deny", message: "Denied from Brim."))
+            case .deny: reply(Self.decision("deny", message: "Denied from Islet."))
             case .handBack: reply(Self.noDecision)
             }
         }
@@ -131,7 +131,7 @@ final class AgentStore {
         sessions[sessionID] = session
     }
 
-    /// Claude waits on the hook, so Brim never holds a request longer than you chose; after
+    /// Claude waits on the hook, so Islet never holds a request longer than you chose; after
     /// that the request goes back to Claude's own prompt.
     private func holdUntilTimeout(_ requestID: UUID, session: String) {
         let wait = max(10, UserDefaults.standard.integer(forKey: Defaults.approvalWait))

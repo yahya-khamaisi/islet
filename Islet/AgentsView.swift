@@ -85,7 +85,7 @@ private struct RequestCard: View {
         }
     }
 
-    /// A permission prompt Brim heard about only through a notification.
+    /// A permission prompt Islet heard about only through a notification.
     private var fallback: AgentStore.Request? {
         var request = AgentStore.Request(tool: "", detail: "")
         request.answerable = false

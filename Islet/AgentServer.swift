@@ -11,7 +11,7 @@ final class AgentServer: @unchecked Sendable {
     var onRequest: (_ path: String, _ body: Data, _ reply: @escaping @Sendable (Data) -> Void) -> Void = { _, _, reply in reply(Data("{}".utf8)) }
 
     private var listener: NWListener?
-    private let queue = DispatchQueue(label: "brim.agent-server")
+    private let queue = DispatchQueue(label: "islet.agent-server")
 
     func start() throws {
         let parameters = NWParameters.tcp

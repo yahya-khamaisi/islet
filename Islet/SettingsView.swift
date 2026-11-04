@@ -1,7 +1,7 @@
 import ServiceManagement
 import SwiftUI
 
-/// Two groups of equal shape: where Brim's data comes from, and how the notch behaves.
+/// Two groups of equal shape: where Islet's data comes from, and how the notch behaves.
 struct SettingsView: View {
     @Environment(Spotify.self) private var spotify
     @Environment(OutlookCalendar.self) private var calendar
@@ -59,8 +59,8 @@ struct SettingsView: View {
                         openAtLogin = SMAppService.mainApp.status == .enabled
                     }))
                 }
-                Row(title: "Brim 0.1") {
-                    Button("Quit Brim") { NSApp.terminate(nil) }.buttonStyle(PillStyle())
+                Row(title: "Islet 0.1") {
+                    Button("Quit Islet") { NSApp.terminate(nil) }.buttonStyle(PillStyle())
                 }
             }
         }

@@ -21,7 +21,7 @@ private struct SpotifyCard: View {
         Card {
             CardLabel(symbol: "music.note", tint: Palette.spotify, title: "Spotify")
             if spotify.isBlocked {
-                CardPrompt(text: "Brim can't see Spotify. Turn Brim on under Automation in Privacy & Security.", action: "Open settings") {
+                CardPrompt(text: "Islet can't see Spotify. Turn Islet on under Automation in Privacy & Security.", action: "Open settings") {
                     NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!)
                 }
             } else if !spotify.isRunning {
@@ -127,7 +127,7 @@ private struct MeetingCard: View {
             case .notAsked:
                 CardPrompt(text: "See your Outlook meetings and join them from here.", action: "Allow calendar access", run: calendar.requestAccess)
             case .denied:
-                CardPrompt(text: "Calendar access is off for Brim.", action: "Open settings", run: calendar.requestAccess)
+                CardPrompt(text: "Calendar access is off for Islet.", action: "Open settings", run: calendar.requestAccess)
             case .granted:
                 let upcoming = calendar.upcomingToday
                 if let next = upcoming.first {

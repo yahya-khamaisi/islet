@@ -22,7 +22,7 @@ final class NotchPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
 
-/// Lets the first click on a button work without activating Brim first.
+/// Lets the first click on a button work without activating Islet first.
 private final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

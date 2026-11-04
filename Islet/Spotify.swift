@@ -2,7 +2,7 @@ import AppKit
 import Observation
 
 /// What Spotify is playing, read through its AppleScript dictionary. Spotify posts a
-/// distributed notification on every change, so Brim never polls while nothing happens.
+/// distributed notification on every change, so Islet never polls while nothing happens.
 @Observable @MainActor
 final class Spotify {
     static let bundleID = "com.spotify.client"
@@ -21,13 +21,13 @@ final class Spotify {
     private(set) var shuffling = false
     private(set) var repeating = false
     private(set) var artwork: NSImage?
-    /// Set when macOS refused Brim's Automation request.
+    /// Set when macOS refused Islet's Automation request.
     private(set) var isBlocked = false
 
     private var position: Double = 0
     private var positionStamp = Date.now
     private var artworkURL: String?
-    private let queue = DispatchQueue(label: "brim.spotify")
+    private let queue = DispatchQueue(label: "islet.spotify")
 
     init() {
         DistributedNotificationCenter.default().addObserver(forName: .init("com.spotify.client.PlaybackStateChanged"), object: nil, queue: .main) { [weak self] _ in
@@ -148,7 +148,7 @@ final class Spotify {
     nonisolated private static func run(_ source: String) -> Result<String, ScriptError> {
         var error: NSDictionary?
         guard let output = NSAppleScript(source: source)?.executeAndReturnError(&error) else {
-            // -1743: the user turned off Brim's Automation access to Spotify.
+            // -1743: the user turned off Islet's Automation access to Spotify.
             return (error?[NSAppleScript.errorNumber] as? Int) == -1743 ? .failure(.denied) : .failure(.failed)
         }
         return .success(output.stringValue ?? "")
