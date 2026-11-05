@@ -32,6 +32,7 @@ final class AgentStore {
     var hooksInstalled = HookInstaller.isInstalled
     private var replies: [UUID: @Sendable (Data) -> Void] = [:]
     private var pruner: Timer?
+    private var shortcuts: [HotKey] = []
 
     init() {
         pruner = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
@@ -48,6 +49,13 @@ final class AgentStore {
     }
     var waiting: [Session] { ordered.filter { $0.status == .waiting } }
     var runningCount: Int { sessions.values.filter { $0.status == .running }.count }
+
+    /// Sessions worth a slot beside the notch: anything running or waiting, plus finished
+    /// and idle ones for the time you chose.
+    var visible: [Session] {
+        let window = Double(UserDefaults.standard.integer(forKey: Defaults.finishedVisible)) * 60
+        return ordered.filter { $0.status == .running || $0.status == .waiting || Date.now.timeIntervalSince($0.updated) < window }
+    }
 
     // MARK: Hook events
 
@@ -86,6 +94,7 @@ final class AgentStore {
             sessions[id] = session
             replies[request.id] = reply
             holdUntilTimeout(request.id, session: id)
+            syncShortcuts()
             return
         case "Notification":
             let message = (event["message"] as? String ?? "").lowercased()
@@ -105,6 +114,7 @@ final class AgentStore {
         }
         sessions[id] = session
         reply(Self.noDecision)
+        syncShortcuts()
     }
 
     // MARK: Answers
@@ -129,6 +139,18 @@ final class AgentStore {
             session.activity = answer == .allow ? "Approved" : "Denied"
         }
         sessions[sessionID] = session
+        syncShortcuts()
+    }
+
+    /// ⌃⌘Y allows and ⌃⌘N denies the newest answerable request. They're registered only
+    /// while one is waiting, so the keys stay free for other apps the rest of the time.
+    func syncShortcuts() {
+        let target = ordered.first { $0.request?.answerable == true }?.id
+        guard let target, UserDefaults.standard.bool(forKey: Defaults.approvalShortcuts) else { shortcuts = []; return }
+        shortcuts = [
+            HotKey(.allow, id: 1) { [weak self] in self?.answer(.allow, for: target) },
+            HotKey(.deny, id: 2) { [weak self] in self?.answer(.deny, for: target) },
+        ]
     }
 
     /// Claude waits on the hook, so Islet never holds a request longer than you chose; after
@@ -139,6 +161,7 @@ final class AgentStore {
             guard let self, let reply = self.replies.removeValue(forKey: requestID) else { return }
             reply(Self.noDecision)
             if self.sessions[session]?.request?.id == requestID { self.sessions[session]?.request?.answerable = false }
+            self.syncShortcuts()
         }
     }
 
@@ -146,6 +169,19 @@ final class AgentStore {
         let cutoff = Date.now.addingTimeInterval(-2 * 3600)
         sessions = sessions.filter { $0.value.updated > cutoff || $0.value.status == .waiting }
     }
+
+    #if DEBUG
+    func loadDemo() {
+        let now = Date.now
+        sessions = [
+            "a": Session(id: "a", project: "islet", status: .waiting, activity: "Wants to run a command", turnStarted: now.addingTimeInterval(-120), updated: now,
+                         request: Request(tool: "Bash", detail: "xcodebuild -scheme Islet -configuration Debug build")),
+            "b": Session(id: "b", project: "telegram_tv", status: .running, activity: "Editing PlayerView.swift", turnStarted: now.addingTimeInterval(-360), updated: now),
+            "c": Session(id: "c", project: "vitals", status: .running, activity: "Running tests · 42 of 118", turnStarted: now.addingTimeInterval(-660), updated: now),
+            "d": Session(id: "d", project: "kynly", status: .done, activity: "Opened a pull request", turnStarted: now.addingTimeInterval(-1500), updated: now.addingTimeInterval(-1080)),
+        ]
+    }
+    #endif
 
     static func activateClaude() {
         let claude = NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier?.hasPrefix("com.anthropic") == true }

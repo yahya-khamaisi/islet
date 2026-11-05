@@ -30,6 +30,7 @@ final class OutlookCalendar {
     private(set) var month = Calendar.current.dateInterval(of: .month, for: .now)!
 
     private let store = EKEventStore()
+    private var isDemo = false
     private var timer: Timer?
 
     init() {
@@ -69,6 +70,29 @@ final class OutlookCalendar {
         meetings(on: .now).filter { !$0.isAllDay && $0.end > .now }
     }
 
+    /// The meeting that puts Outlook beside the notch: one already running, or the next
+    /// one starting within your lead time.
+    var current: Meeting? {
+        let lead = Double(UserDefaults.standard.integer(forKey: Defaults.meetingLead)) * 60
+        return upcomingToday.first { $0.start.timeIntervalSinceNow <= lead }
+    }
+
+    #if DEBUG
+    func loadDemo() {
+        isDemo = true
+        access = .granted
+        usesOutlookAccount = true
+        let now = Date.now
+        let teams = URL(string: "https://teams.microsoft.com/l/meetup-join/demo")
+        meetings = [
+            Meeting(id: "1", title: "Design review", start: now.addingTimeInterval(12 * 60), end: now.addingTimeInterval(42 * 60), place: "Teams", color: Palette.outlook, joinURL: teams, isAllDay: false),
+            Meeting(id: "2", title: "Call with Sam", start: now.addingTimeInterval(4 * 3600), end: now.addingTimeInterval(4.5 * 3600), place: "Teams", color: Palette.done, joinURL: teams, isAllDay: false),
+            Meeting(id: "3", title: "Sprint planning", start: now.addingTimeInterval(5.5 * 3600), end: now.addingTimeInterval(6.5 * 3600), place: "Room 4B", color: .gray, joinURL: nil, isAllDay: false),
+        ]
+        timer?.invalidate()
+    }
+    #endif
+
     private func updateAccess() {
         switch EKEventStore.authorizationStatus(for: .event) {
         case .fullAccess: access = .granted
@@ -78,6 +102,7 @@ final class OutlookCalendar {
     }
 
     func reload() {
+        guard !isDemo else { return }
         month = Calendar.current.dateInterval(of: .month, for: .now)!
         guard access == .granted else { meetings = []; return }
         let all = store.calendars(for: .event)

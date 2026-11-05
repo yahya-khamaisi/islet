@@ -23,6 +23,8 @@ final class Spotify {
     private(set) var artwork: NSImage?
     /// Set when macOS refused Islet's Automation request.
     private(set) var isBlocked = false
+    /// When music was last heard, so a paused track lingers for a while.
+    private(set) var lastPlayed: Date?
 
     private var position: Double = 0
     private var positionStamp = Date.now
@@ -41,6 +43,10 @@ final class Spotify {
                 MainActor.assumeIsolated { self?.refresh() }
             }
         }
+        #if DEBUG
+        // Demo mode never talks to the real Spotify.
+        if CommandLine.arguments.contains("-demo") { artworkURL = "demo"; return }
+        #endif
         refresh()
     }
 
@@ -53,6 +59,7 @@ final class Spotify {
 
     func togglePlay() {
         isPlaying.toggle()
+        lastPlayed = .now
         positionStamp = .now
         send("playpause")
     }
@@ -68,6 +75,13 @@ final class Spotify {
         send("set player position to \(target)")
     }
 
+    /// Playing, or paused within the grace period you chose.
+    var isActive: Bool {
+        guard isRunning, track != nil else { return false }
+        let grace = Double(UserDefaults.standard.integer(forKey: Defaults.pausedGrace)) * 60
+        return isPlaying || (lastPlayed.map { Date.now.timeIntervalSince($0) < grace } ?? false)
+    }
+
     func launch() {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.bundleID) else { return }
         NSWorkspace.shared.openApplication(at: url, configuration: .init())
@@ -79,7 +93,7 @@ final class Spotify {
     }
 
     private func send(_ command: String) {
-        guard spotifyRunning else { return }
+        guard spotifyRunning, artworkURL != "demo" else { return }
         queue.async {
             _ = Self.run("tell application \"Spotify\" to \(command)")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in self?.refresh() }
@@ -87,6 +101,7 @@ final class Spotify {
     }
 
     func refresh() {
+        if artworkURL == "demo" { return }
         guard spotifyRunning else {
             isRunning = false
             track = nil
@@ -113,6 +128,7 @@ final class Spotify {
             let f = text.components(separatedBy: "\u{1F}")
             guard f.count >= 10 else { track = nil; return }
             isPlaying = f[0] == "playing"
+            if isPlaying { lastPlayed = .now }
             track = f[4].isEmpty ? nil : Track(id: f[4], name: f[1], artist: f[2], album: f[3],
                                                duration: (Double(f[5]) ?? 0) / 1000)
             position = Double(f[6].replacingOccurrences(of: ",", with: ".")) ?? 0
@@ -133,6 +149,19 @@ final class Spotify {
             artwork = NSImage(data: data)
         }
     }
+
+    #if DEBUG
+    func loadDemo() {
+        isRunning = true
+        track = Track(id: "demo", name: "Midnight Drive", artist: "Lumen Coast", album: "Night Roads", duration: 206)
+        isPlaying = true
+        lastPlayed = .now
+        position = 84
+        positionStamp = .now
+        shuffling = true
+        artworkURL = "demo"
+    }
+    #endif
 
     // Fields are joined with the ASCII unit separator, which never appears in titles.
     private static let stateScript = """
